@@ -30,6 +30,10 @@ client = MongoClient("your-mongodb-connection-string")
 db = client['fraud_detection']
 transactions = db['transactions']
 
+@app.route("/")
+def home():
+    return "✅ Credit Card Fraud Detection API is running!"
+
 @app.route("/predict", methods=["POST"])
 def predict():
     data = request.json
