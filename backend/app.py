@@ -1,9 +1,22 @@
+import os
+import sys
+
+# ⛔ Disable GPU (to avoid CUDA errors in cloud environments)
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+# ✅ Hide TensorFlow info messages
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+# ✅ Add current directory to sys.path so 'utils' can be imported
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import numpy as np
 from tensorflow.keras.models import load_model
 from pymongo import MongoClient
 import datetime
+
 from utils.alert import send_alerts
 from utils.gps_blocker import block_location
 from utils.sms_alert import send_sms
@@ -13,9 +26,13 @@ app = Flask(__name__)
 CORS(app)
 
 model = load_model("model/fraud_model.h5")
-client = MongoClient("mongodb+srv://perumalnambi7:Arjunking2003@cluster0.dg88to1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+client = MongoClient("your-mongodb-connection-string")
 db = client['fraud_detection']
 transactions = db['transactions']
+
+@app.route("/")
+def home():
+    return "✅ Credit Card Fraud Detection API is running!"
 
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -65,5 +82,17 @@ def download_csv(user_id):
         writer.writerow(row.values())
     return output.getvalue(), 200, {'Content-Type': 'text/csv'}
 
+# 🔽 This will run send_alerts for testing when the app starts
+test_record = {
+    "user_id": "test_user",
+    "features": [0.1, 0.2, 0.3],
+    "amount": 100.0,
+    "location": "Chennai",
+    "confidence": 0.95,
+    "is_fraud": True,
+    "timestamp": datetime.datetime.now()
+}
+send_alerts(test_record)
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=True)
